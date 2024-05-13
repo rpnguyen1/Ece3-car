@@ -19,22 +19,12 @@ const int LED_RF = 41;
 
 uint16_t sensorValues[8];
 
-// int current_position = -40;
-// int increment_position = 1;
-
-int number_samples = 1;
-
 
 int leftBaseSpd = 42; // base
 int rightBaseSpd = 42; // base
 int newSpeedL = 0;
 int newSpeedR = 0;
 
-
-// int summed_values[8] = {0};
-// int normalized_values[8] = {0};
-// int max[8] = {2500, 2500, 2500, 2369, 2440, 2500, 2415};
-// int min[8] = {791, 664, 711, 641, 757, 741, 804};
 
 ///////////////////////////////////
 void setup() {
@@ -67,10 +57,6 @@ void setup() {
 }
 
 // Function definition
-// int calc8421(int O2, int P2, int Q2, int R2, int S2, int T2, int U2, int V2) {
-//   // int min[8] = {791, 664, 711, 641, 757, 741, 804};
-//   return (-8 * O2 - 4 * P2 - 2 * Q2 - R2 + S2 + 2 * T2 + 4 * U2 + 8 * V2) / 4;
-// }
 int calc8421(int x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8){
   int result;
   int w[4] = {8, 4, 2, 1};
@@ -82,29 +68,19 @@ int calc8421(int x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8){
 
 int summed_values[8] = {0};
 int normalized_values[8] = {0};
-int max[8] = {2500, 2500, 2500, 2369, 2440, 2500, 2415};
+int max[8] = {2500, 2500, 2500, 2369, 2440, 2500, 2415}; // Starting values
 int min[8] = {791, 664, 711, 641, 757, 741, 804};
 
 void loop() {
-
-
-// 
-  
-//  ECE3_read_IR(sensorValues);
-
-  // Take the average of 5 consecutive values for each sensor
-  // for (int j = 0; j < number_samples; j++){
   // Read raw sensor values
   ECE3_read_IR(sensorValues);
-  // summed_values[i] = sensorValues[i];
 
-  // Add the current sensor values using a for loop
+  // check max and min values
   for (unsigned char i = 0; i < 8; i++)
   {
-    // summed_values[i] += sensorValues[i];
-    summed_values[i] = sensorValues[i];
-    // redo max and min
+    summed_values[i] = sensorValues[i]; // ignore
 
+    // redo max and min
     if (sensorValues[i]>max[i]){
       max[i] = sensorValues[i];
     }
@@ -112,7 +88,6 @@ void loop() {
       min[i] = sensorValues[i];
     }
   }
-  // }
 
   // Print current position at start of each column
   // Serial.print("current_position: ");
@@ -129,10 +104,9 @@ void loop() {
     // Serial.print(" : "); // tab to format the raw data into columns in the Serial monitor
 
     // normalized
-
     normalized_values[i] = ((value * 1000) - (min[i] * 1000)) / (max[i] - min[i]) ; // multiply by 1000 first to avoid int rounding
+    
     // Serial.print(normalized_values[i]);
-
     // Serial.print('\t'); // tab to format the raw data into columns in the Serial monitor
 
   }
@@ -156,10 +130,7 @@ void loop() {
 
 
   float k_p = 0.05;
-  // float k_p2 = 0.05;
   int p = calc * k_p;
-  // int p2 = calc * k_p2;
-
 
   // Serial.print("     p ");
   // Serial.print(p);
@@ -193,11 +164,5 @@ void loop() {
   digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
   digitalWrite(LED_BUILTIN_2, HIGH);  // turn the LED on (HIGH is the voltage level)
   digitalWrite(LED_RF, HIGH);
-  // delay(250);
-  // digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  // digitalWrite(LED_BUILTIN_2, HIGH);   // turn the LED off by making the voltage LOW
-  // digitalWrite(LED_RF, LOW);
-  // delay(250);
-    
 }
 
