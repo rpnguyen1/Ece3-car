@@ -70,6 +70,7 @@ int summed_values[8] = {0};
 int normalized_values[8] = {0};
 int max[8] = {2500, 2500, 2500, 2369, 2440, 2500, 2415}; // Starting values
 int min[8] = {791, 664, 711, 641, 757, 741, 804};
+int error[2] = {0,0};
 
 void loop() {
   // Read raw sensor values
@@ -78,8 +79,6 @@ void loop() {
   // check max and min values
   for (unsigned char i = 0; i < 8; i++)
   {
-    summed_values[i] = sensorValues[i]; // ignore
-
     // redo max and min
     if (sensorValues[i]>max[i]){
       max[i] = sensorValues[i];
@@ -87,17 +86,7 @@ void loop() {
     if (sensorValues[i]<min[i]){
       min[i] = sensorValues[i];
     }
-  }
-
-  // Print current position at start of each column
-  // Serial.print("current_position: ");
-  // Serial.print(current_position);
-  // Serial.print("\t");
-
-  // Print average values (average value = summed_values / number_samples
-  for (unsigned char i = 0; i < 8; i++) {
-    // int value = summed_values[i] / number_samples;
-    int value = summed_values[i];
+    int value = sensorValues[i];
     // Serial.print(i);
     // Serial.print(", ");
     // Serial.print(value);
@@ -105,11 +94,9 @@ void loop() {
 
     // normalized
     normalized_values[i] = ((value * 1000) - (min[i] * 1000)) / (max[i] - min[i]) ; // multiply by 1000 first to avoid int rounding
-    
-    // Serial.print(normalized_values[i]);
-    // Serial.print('\t'); // tab to format the raw data into columns in the Serial monitor
-
   }
+
+  // }
   // Serial.println();
   int calc = calc8421(normalized_values[0], 
                       normalized_values[1],
@@ -125,44 +112,39 @@ void loop() {
   // Increment current position by the increment value
   // current_position += increment_position;
 
+//////////////////////////////////
 
-
-
+  // add error to error array and shift
+  // error[0] = error[1];
+  // error[1] = calc;
 
   float k_p = 0.05;
   int p = calc * k_p;
 
-  // Serial.print("     p ");
-  // Serial.print(p);
+  // float k_c = 0.05;
+  // int delta_error = error[1] - error[0];
+  // int c = delta_error * k_c;
+
+///////////////////////
+  // Serial.print("     c ");
+  // Serial.print(c);
+  // Serial.print("     delta_error ");
+  // Serial.print(delta_error);
+
+  // Serial.print("     error[0] ");
+  // Serial.print(error[0]);
+
+  // Serial.print("     error[1] ");
+  // Serial.print(error[1]);
+  //   Serial.println();
+
   // Serial.println();
   // calc new speed (p)
-  // leftBaseSpd = leftBaseSpd + p;
-  // rightBaseSpd = rightBaseSpd - p;
 
-  newSpeedL = leftBaseSpd - p;;
+  newSpeedL = leftBaseSpd - p;
   newSpeedR = rightBaseSpd + p;
 
-  // if (leftBaseSpd <= 0 ){
-  //   leftBaseSpd = 0;
-  // }
-  // if (rightBaseSpd <= 0 ){
-  //   rightBaseSpd = 0;
-  // }
-
-  // Write to pin
   analogWrite(left_pwm_pin,newSpeedL);
   analogWrite(right_pwm_pin,newSpeedR);
-  
-  // Serial.print("     newSpeedL ");
-  // Serial.print(newSpeedL );
-  // Serial.print("     newSpeedR ");
-  // Serial.print(newSpeedR );
-  // Serial.print(p);
-  // Serial.println();
-
-
-  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-  digitalWrite(LED_BUILTIN_2, HIGH);  // turn the LED on (HIGH is the voltage level)
-  digitalWrite(LED_RF, HIGH);
 }
 
