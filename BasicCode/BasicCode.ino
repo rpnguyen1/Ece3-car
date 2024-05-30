@@ -27,11 +27,20 @@ int newSpeedR = 0;
 
 int crossSpeedFlag = 0;
 int spinState = 0;
+int startFlag = 0;
+int spinTicks = 0;
+int runs = 0;
 
 
 ///////////////////////////////////
 void setup() {
 // put your setup code here, to run once:
+  crossSpeedFlag = 0;
+  spinState = 0;
+  startFlag = 0;
+  spinTicks = 0;
+  runs = 0;
+
   pinMode(left_nslp_pin,OUTPUT);
   pinMode(right_nslp_pin,OUTPUT);
 
@@ -47,12 +56,15 @@ void setup() {
   digitalWrite(right_nslp_pin,HIGH);
 
   // pinMode(LED_RF, OUTPUT);
-  crossSpeedFlag = 0;
+
   ECE3_Init();
   // set the data rate in bits/second for serial data transmission
-  Serial.begin(9600); 
   
+  Serial.begin(9600); 
+
   delay(2000); //Wait 2 seconds before starting 
+  startFlag = 1;
+
 
   // leds
   // pinMode(LED_BUILTIN, OUTPUT);
@@ -78,7 +90,9 @@ int error[2] = {0,0};
 
 void loop() {
   // Read raw sensor values
-  ECE3_read_IR(sensorValues);
+  if (startFlag == 1){
+    ECE3_read_IR(sensorValues);
+  }
 
   // check max and min values
   for (unsigned char i = 0; i < 8; i++)
@@ -96,9 +110,12 @@ void loop() {
     // Serial.print(value);
     // Serial.print(" : "); // tab to format the raw data into columns in the Serial monitor
 
+
     // normalized
     normalized_values[i] = ((value * 1000) - (min[i] * 1000)) / (max[i] - min[i]) ; // multiply by 1000 first to avoid int rounding
   }
+    // Serial.println();
+
 
   // if ((normalized_values[0] > 300 || normalized_values[1] > 300) 
   //   && (normalized_values[2] > 500 || normalized_values[3] > 500 || normalized_values[4] > 500 ) 
@@ -110,25 +127,43 @@ void loop() {
   // }
 
 
-  if (normalized_values[0] > 990 && 
-    normalized_values[1] > 990 && 
-    normalized_values[2] > 990 && 
-    normalized_values[3] > 990 && 
-    normalized_values[4] > 990 && 
-    normalized_values[5] > 990 && 
-    normalized_values[6] > 990 && 
-    normalized_values[7] > 990){
+  if (sensorValues[0] > 2490 && 
+    sensorValues[1] > 2490 && 
+    sensorValues[2] > 2490 && 
+    sensorValues[3] > 2490 && 
+    sensorValues[4] > 2490 && 
+    sensorValues[5] > 2490 && 
+    sensorValues[6] > 2490 && 
+    sensorValues[7] > 2490){
+      
+    if (crossSpeedFlag == 0){
+      crossSpeedFlag = 1;
+    }else if (crossSpeedFlag == 1){
+      crossSpeedFlag = 2;
+    }
 
-    crossSpeedFlag = crossSpeedFlag + 1;
-
+  }else{
+    if (crossSpeedFlag == 1){
+      crossSpeedFlag = 0;
+    }
+    // else if (crossSpeedFlag == 1){
+    //   crossSpeedFlag = 2;
+    // }
   }
 
   if (crossSpeedFlag >= 2){
-    if (spinState = 1){
-      spinState = 0;
-    }else if (spinState = 0){
+    if (spinState == 0){
       spinState = 1;
     }
+    // Serial.print("spinState: ");
+    // Serial.print(spinState);
+    // Serial.print("         crossSpeedFlag: ");
+    // Serial.print(crossSpeedFlag);
+    // Serial.println();
+
+    // else if (spinState = 0){
+    //   spinState = 1;
+    // }
   }
   // int numInflections = 0;
   // int prevValue = sensorValues[0];
@@ -218,31 +253,46 @@ void loop() {
   // Serial.print("     newSpeedR ");
   // Serial.print(newSpeedR);
   // Serial.println();
-  // check for negative TODO
-  if (spinState = 1){
-    
+  // // check for negative TODO
+  if (spinState == 1){
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
     digitalWrite(LED_BUILTIN_2, HIGH);  // turn the LED on (HIGH is the voltage level)
     digitalWrite(LED_RF, HIGH);
     digitalWrite(left_dir_pin,HIGH);
-    digitalWrite(left_nslp_pin,HIGH);
+    // digitalWrite(left_nslp_pin,HIGH);
     digitalWrite(right_dir_pin,LOW);
-    digitalWrite(right_nslp_pin,HIGH);
+    // digitalWrite(right_nslp_pin,HIGH);
 
-    analogWrite(left_pwm_pin,newSpeedL);
-    analogWrite(right_pwm_pin,newSpeedR);
-  } else{
+    analogWrite(left_pwm_pin,20);
+    analogWrite(right_pwm_pin,20);
+    spinTicks = spinTicks + 1;
+    if (spinTicks > 50){
+      
+      if (runs == 1){
+        spinState = 3;
+        runs = 2;
+      }else if (runs == 0){
+        spinState = 0;
+        runs = 1;
+      }
+    }
+  } else if (spinState == 0){
     digitalWrite(LED_BUILTIN, LOW);  // turn the LED on (HIGH is the voltage level)
     digitalWrite(LED_BUILTIN_2, LOW);  // turn the LED on (HIGH is the voltage level)
     digitalWrite(LED_RF, LOW);
 
     digitalWrite(left_dir_pin,LOW);
-    digitalWrite(left_nslp_pin,HIGH);
+    // digitalWrite(left_nslp_pin,HIGH);
     digitalWrite(right_dir_pin,LOW);
-    digitalWrite(right_nslp_pin,HIGH);
+    // digitalWrite(right_nslp_pin,HIGH);
     
     analogWrite(left_pwm_pin,newSpeedL);
     analogWrite(right_pwm_pin,newSpeedR);
+    // analogWrite(left_pwm_pin,10);
+    // analogWrite(right_pwm_pin,10);
+  }else{
+    analogWrite(left_pwm_pin,0);
+    analogWrite(right_pwm_pin,0);
   }
 
 
