@@ -17,7 +17,7 @@ const int right_pwm_pin=39;
 const int LED_RF = 41;
 
 
-uint16_t sensorValues[8];
+uint16_t sensorValues[8] = {0};
 
 
 int leftBaseSpd = 30; // base
@@ -30,6 +30,13 @@ int spinState = 0;
 int startFlag = 0;
 int spinTicks = 0;
 int runs = 0;
+
+int binary_values[8] = {0};
+int normalized_values[8] = {0};
+int max[8] = {2500, 2500, 2500, 2369, 2440, 2500, 2415}; // Starting values
+int min[8] = {791, 664, 711, 641, 757, 741, 804};
+int error[2] = {0,0};
+
 
 
 ///////////////////////////////////
@@ -68,9 +75,10 @@ void setup() {
   startFlag = 1;
 
 
-  // leds
-  // pinMode(LED_BUILTIN, OUTPUT);
-  // pinMode(LED_BUILTIN_2, OUTPUT);
+  //leds
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_BUILTIN_2, OUTPUT);
+  pinMode(LED_RF, OUTPUT);
   
 }
 
@@ -83,13 +91,6 @@ int calc8421(int x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8){
                + w[3] * x5 + w[2] * x6 + w[1] * x7 + w[0] * x8) / 4;
   return result;
 }
-
-int summed_values[8] = {0};
-int binary_values[8] = {0};
-int normalized_values[8] = {0};
-int max[8] = {2500, 2500, 2500, 2369, 2440, 2500, 2415}; // Starting values
-int min[8] = {791, 664, 711, 641, 757, 741, 804};
-int error[2] = {0,0};
 
 void loop() {
   // Read raw sensor values
@@ -149,7 +150,6 @@ void loop() {
     }else if (crossSpeedFlag == 1){
       crossSpeedFlag = 2;
     }
-
   }else{
     if (crossSpeedFlag == 1){
       crossSpeedFlag = 0;
@@ -222,22 +222,6 @@ void loop() {
 
   // Serial.println();
   // calc new speed (p)
-  int steering = 0;
-
-  // if (p>0 && d>0){  // +P   + D
-  //   steering = p + d;
-  // }else if (p<0 && d>0){   // -P  +D
-  //   steering = p + d;
-  // }else if (p>0 && d<0){   // +P  -D
-  //   steering = p + d;    // left side of the line, moving towards
-  // }else{   // -P   -D
-  //   steering = p + d;
-  // }
-  // steering = p + d;
-
-  // Serial.print("     steering ");
-  // Serial.print(steering);
-  // Serial.println();
 
   newSpeedL = leftBaseSpd - (p + d);
   newSpeedR = rightBaseSpd + (p + d);
@@ -256,12 +240,12 @@ void loop() {
   if (newSpeedR > 255){
     newSpeedR = 255;
   }
-  Serial.print("     newSpeedL ");
-  Serial.print(newSpeedL);
-  Serial.print("     newSpeedR ");
-  Serial.print(newSpeedR);
-  Serial.println();
-  // // check for negative TODO
+  // Serial.print("     newSpeedL ");
+  // Serial.print(newSpeedL);
+  // Serial.print("     newSpeedR ");
+  // Serial.print(newSpeedR);
+  // Serial.println();
+
   if (spinState == 1){
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
     digitalWrite(LED_BUILTIN_2, HIGH);  // turn the LED on (HIGH is the voltage level)
@@ -271,11 +255,10 @@ void loop() {
     digitalWrite(right_dir_pin,LOW);
     // digitalWrite(right_nslp_pin,HIGH);
 
-    analogWrite(left_pwm_pin,23);
-    analogWrite(right_pwm_pin,23);
+    analogWrite(left_pwm_pin,20);
+    analogWrite(right_pwm_pin,20);
     spinTicks = spinTicks + 1;
     if (spinTicks > 500){
-      
       if (runs == 1){
         spinTicks = 0;
         crossSpeedFlag = 0;
@@ -289,6 +272,7 @@ void loop() {
       }
     }
   } else if (spinState == 0){
+
     digitalWrite(LED_BUILTIN, LOW);  // turn the LED on (HIGH is the voltage level)
     digitalWrite(LED_BUILTIN_2, LOW);  // turn the LED on (HIGH is the voltage level)
     digitalWrite(LED_RF, LOW);
@@ -302,16 +286,13 @@ void loop() {
     analogWrite(right_pwm_pin,newSpeedR);
     // analogWrite(left_pwm_pin,10);
     // analogWrite(right_pwm_pin,10);
-  }else{
-    // analogWrite(left_pwm_pin,0);
-    // analogWrite(right_pwm_pin,0);
+  }else if (spinState == 3){
+    analogWrite(left_pwm_pin,0);
+    analogWrite(right_pwm_pin,0);
     while(true){
       runLightShow();
     }
-
   }
-
-
 }
 
 void runLightShow() {
@@ -348,34 +329,34 @@ void runLightShow() {
   // Add more patterns as needed
 }
 
-void  ChangeWheelSpeeds(int initialLeftSpd, int finalLeftSpd, int initialRightSpd, int finalRightSpd) {
-/*  
- *   This function changes the car speed gradually (in about 30 ms) from initial
- *   speed to final speed. This non-instantaneous speed change reduces the load 
- *   on the plastic geartrain, and reduces the failure rate of the motors. 
- */
-  int diffLeft  = finalLeftSpd-initialLeftSpd;
-  int diffRight = finalRightSpd-initialRightSpd;
-  int stepIncrement = 20;
-  int numStepsLeft  = abs(diffLeft)/stepIncrement;
-  int numStepsRight = abs(diffRight)/stepIncrement;
-  int numSteps = max(numStepsLeft,numStepsRight);
+// void  ChangeWheelSpeeds(int initialLeftSpd, int finalLeftSpd, int initialRightSpd, int finalRightSpd) {
+// /*  
+//  *   This function changes the car speed gradually (in about 30 ms) from initial
+//  *   speed to final speed. This non-instantaneous speed change reduces the load 
+//  *   on the plastic geartrain, and reduces the failure rate of the motors. 
+//  */
+//   int diffLeft  = finalLeftSpd-initialLeftSpd;
+//   int diffRight = finalRightSpd-initialRightSpd;
+//   int stepIncrement = 20;
+//   int numStepsLeft  = abs(diffLeft)/stepIncrement;
+//   int numStepsRight = abs(diffRight)/stepIncrement;
+//   int numSteps = max(numStepsLeft,numStepsRight);
   
-  int pwmLeftVal = initialLeftSpd;        // initialize left wheel speed 
-  int pwmRightVal = initialRightSpd;      // initialize right wheel speed 
-  int deltaLeft = (diffLeft)/numSteps;    // left in(de)crement
-  int deltaRight = (diffRight)/numSteps;  // right in(de)crement
+//   int pwmLeftVal = initialLeftSpd;        // initialize left wheel speed 
+//   int pwmRightVal = initialRightSpd;      // initialize right wheel speed 
+//   int deltaLeft = (diffLeft)/numSteps;    // left in(de)crement
+//   int deltaRight = (diffRight)/numSteps;  // right in(de)crement
 
-  for(int k=0;k<numSteps;k++) {
-    pwmLeftVal = pwmLeftVal + deltaLeft;
-    pwmRightVal = pwmRightVal + deltaRight;
-    analogWrite(left_pwm_pin,pwmLeftVal);    
-    analogWrite(right_pwm_pin,pwmRightVal); 
-    delay(30);   
-  } // end for int k
-//  if(finalLeftSpd  == 0) analogWrite(left_pwm_pin,0); ;
-//  if(finalRightSpd == 0) analogWrite(right_pwm_pin,0);
-  analogWrite(left_pwm_pin,finalLeftSpd);  
-  analogWrite(right_pwm_pin,finalRightSpd);  
-} // end void  ChangeWheelSpeeds
+//   for(int k=0;k<numSteps;k++) {
+//     pwmLeftVal = pwmLeftVal + deltaLeft;
+//     pwmRightVal = pwmRightVal + deltaRight;
+//     analogWrite(left_pwm_pin,pwmLeftVal);    
+//     analogWrite(right_pwm_pin,pwmRightVal); 
+//     delay(30);   
+//   } // end for int k
+// //  if(finalLeftSpd  == 0) analogWrite(left_pwm_pin,0); ;
+// //  if(finalRightSpd == 0) analogWrite(right_pwm_pin,0);
+//   analogWrite(left_pwm_pin,finalLeftSpd);  
+//   analogWrite(right_pwm_pin,finalRightSpd);  
+// } // end void  ChangeWheelSpeeds
 
