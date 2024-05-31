@@ -29,15 +29,22 @@ int crossSpeedFlag = 0;
 int spinState = 0;
 int spinTicks = 0;
 int runs = 0;
+int startTicks = 0;
 
 int binary_values[8] = {0};
 int normalized_values[8] = {0};
 // int max[8] = {2500, 2500, 2500, 2369, 2440, 2500, 2415}; // Starting values
 int max[8] = {2500, 2500, 2500, 2500, 2500, 2500, 2500}; // Starting values
 // int min[8] = {791, 664, 711, 641, 757, 741, 804};
-int min[8] = {500, 500, 500, 500, 500, 541, 500};
+int min[8] = {791, 664, 711, 641, 757, 741, 804};
+// int min[8] = {591, 464, 511, 441, 557, 441, 604};
 int error[2] = {0,0};
 
+// Threshold for detecting black
+const int threshold = 800;
+
+// Threshold for significant change in sensor values
+const int changeThreshold = 100;
 
 
 ///////////////////////////////////
@@ -105,23 +112,63 @@ int calc8421(int x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8, boo
   // // Calculate and return the error value
   // return weightedSum / weightSum;
 }
+// Function to normalize sensor values to binary (0 for white, 1 for black)
+// void normalizeSensors(int normalizedValues[7]) {
+//   for (int i = 0; i < 7; i++) {
+//     binary_values[i] = normalizedValues[i] > threshold ? 1 : 0;
+//   }
+// }
 
+// Function to detect black-white-black-white-black pattern
+// bool detectBWPattern(int normalizedValues[7]) {
+//   int patternCount = 0;
+//   for (int i = 1; i < 6; i++) {
+//     if (binary_values[i-1] != binary_values[i]) {
+//       patternCount++;
+//     }
+//   }
+//   return patternCount == 4; // Expecting exactly 4 transitions for B-W-B-W-B
+// }
 
-int countInflectionPoints() {
-  int inflectionPoints = 0;
-  for (int i = 1; i < 6; i++) { // Check between sensors
-    if ((binary_values[i] - binary_values[i-1]) * (binary_values[i+1] - binary_values[i]) < 0) {
-      inflectionPoints++;
-    }
-  }
-  return inflectionPoints;
-}
+// int countInflectionPoints() {
+//   int inflectionPoints = 0;
+//   for (int i = 1; i < 6; i++) {
+//     int change1 = abs(normalized_values[i] - normalized_values[i-1]);
+//     int change2 = abs(normalized_values[i+1] - normalized_values[i]);
+//     if (change1 > changeThreshold && change2 > changeThreshold && (normalized_values[i] - normalized_values[i-1]) * (normalized_values[i+1] - normalized_values[i]) < 0) {
+//       inflectionPoints++;
+//     }
+//   }
+//   return inflectionPoints;
+// }
 
-// Function to detect side interference based on inflection points
+// // Function to detect side interference based on inflection points
+// bool detectSideInterference() {
+//   int inflectionPoints = countInflectionPoints();
+//   // Assuming that more than 2 inflection points indicate side interference
+//   return inflectionPoints > 2;
+// }
+
 bool detectSideInterference() {
-  int inflectionPoints = countInflectionPoints();
-  // Assuming that more than 2 inflection points indicate side interference
-  return inflectionPoints > 2;
+  int patternCount = 0;
+  int firstBlack = 0;
+  int firstWhite= 0;
+  int midBlack = 0;
+  int secWhite = 0;
+  int thirdBlack = 0;
+  if (sensorValues[0] > 2490 && sensorValues[7] > 2490){
+    // for (int i = 0; i < 7; i++) {
+    //   if (sensorValues[i] > 2490){
+    //     firstBlack = i;
+    //   }else{
+    //     firstWhite = i;
+    //   }
+
+    // }
+    return false;
+  }
+  return true;
+  // return patternCount == 4; // Expecting exactly 4 transitions for B-W-B-W-B
 }
 
 void loop() {
@@ -139,11 +186,6 @@ void loop() {
       min[i] = sensorValues[i];
     }
 
-    if (sensorValues[i] > 2490){
-      binary_values[i] = 1;
-    }else{
-      binary_values[i] = 0;
-    }
     int value = sensorValues[i];
     // Serial.print(i);
     // Serial.print(", ");
@@ -156,17 +198,25 @@ void loop() {
   }
 
   bool sideInterference = detectSideInterference();
+  if (sideInterference == true){
+    digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+    digitalWrite(LED_BUILTIN_2, HIGH);  // turn the LED on (HIGH is the voltage level)
+
+  }
+
 
     // Serial.println();
 
-  // if ((normalized_values[0] > 300 || normalized_values[1] > 300) 
-  //   && (normalized_values[2] > 500 || normalized_values[3] > 500 || normalized_values[4] > 500 ) 
-  //   && (normalized_values[6] > 300 || normalized_values[7] > 300)){
-  //   normalized_values[0] = 0;
-  //   normalized_values[1] = 0;
-  //   normalized_values[6] = 0;
-  //   normalized_values[7] = 0;
-  // }
+  if ((normalized_values[0] > 300 || normalized_values[1] > 300) 
+    && (normalized_values[2] > 500 || normalized_values[3] > 500 || normalized_values[4] > 500 ) 
+    && (normalized_values[6] > 300 || normalized_values[7] > 300))
+    {
+    // normalized_values[0] = 0;
+    // normalized_values[1] = 0;
+    // normalized_values[6] = 0;
+    // normalized_values[7] = 0;
+
+  }
 
 
   if (sensorValues[0] > 2490 && 
@@ -289,7 +339,7 @@ void loop() {
     analogWrite(left_pwm_pin,25);
     analogWrite(right_pwm_pin,25);
     spinTicks = spinTicks + 1;
-    if (spinTicks > 500){
+    if (spinTicks > 480){
       if (runs == 1){
         spinTicks = 0;
         crossSpeedFlag = 0;
@@ -325,9 +375,15 @@ void loop() {
     // digitalWrite(left_nslp_pin,HIGH);
     // digitalWrite(right_dir_pin,LOW);
     // digitalWrite(right_nslp_pin,HIGH);
-    
-    analogWrite(left_pwm_pin,newSpeedL);
-    analogWrite(right_pwm_pin,newSpeedR);
+    if (startTicks < 100){
+      // analogWrite(left_pwm_pin,20);
+      // analogWrite(right_pwm_pin,20);
+      startTicks = startTicks + 1;
+    }else{
+      // analogWrite(left_pwm_pin,newSpeedL);
+      // analogWrite(right_pwm_pin,newSpeedR);
+    }
+
   }
   // else if (spinState == 3){
   //   analogWrite(left_pwm_pin,0);
