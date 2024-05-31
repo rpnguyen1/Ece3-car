@@ -150,24 +150,32 @@ int calc8421(int x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8, boo
 // }
 
 bool detectSideInterference() {
-  int patternCount = 0;
-  int firstBlack = 0;
-  int firstWhite= 0;
-  int midBlack = 0;
-  int secWhite = 0;
-  int thirdBlack = 0;
-  if (sensorValues[0] > 2490 && sensorValues[7] > 2490){
-    // for (int i = 0; i < 7; i++) {
-    //   if (sensorValues[i] > 2490){
-    //     firstBlack = i;
-    //   }else{
-    //     firstWhite = i;
-    //   }
+  // int patternCount = 0;
+  // int firstBlack = 0;
+  // int firstWhite= 0;
+  // int midBlack = 0;
+  // int secWhite = 0;
+  // int thirdBlack = 0;
+  bool ret = false;
+  if (sensorValues[0] > 2490 && 
+    sensorValues[1] > 2490 && 
+    // sensorValues[2] > 2490 && 
+    // sensorValues[3] > 2490 && 
+    // sensorValues[4] > 2490 && 
+    // sensorValues[5] > 2490 && 
+    sensorValues[6] > 2490 && 
+    sensorValues[7] > 2490){
+  //   // for (int i = 0; i < 7; i++) {
+  //   //   if (sensorValues[i] > 2490){
+  //   //     firstBlack = i;
+  //   //   }else{
+  //   //     firstWhite = i;
+  //   //   }
 
-    // }
-    return false;
+  //   // }
+    ret = true;
   }
-  return true;
+  return ret;
   // return patternCount == 4; // Expecting exactly 4 transitions for B-W-B-W-B
 }
 
@@ -197,11 +205,22 @@ void loop() {
     normalized_values[i] = ((value * 1000) - (min[i] * 1000)) / (max[i] - min[i]) ; // multiply by 1000 first to avoid int rounding
   }
 
-  bool sideInterference = detectSideInterference();
+  // bool sideInterference = detectSideInterference();
+  bool sideInterference = false;
+  if (sensorValues[0] > 2490 && 
+      sensorValues[7] > 2490){
+      if ((sensorValues[1] < 2490 && sensorValues[2] > 2490 && 
+          sensorValues[3] < 2490 && sensorValues[4] > 2490 &&  
+          sensorValues[5] < 2490) ||
+          (sensorValues[2] < 2490 && sensorValues[3] > 2490 &&  
+          sensorValues[4] < 2490 && sensorValues[5] > 2490 && 
+          sensorValues[6] < 2490)) {  // W-B
+        sideInterference =  true; // Pattern detected
+      }
+    }
   if (sideInterference == true){
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
     digitalWrite(LED_BUILTIN_2, HIGH);  // turn the LED on (HIGH is the voltage level)
-
   }
 
 
